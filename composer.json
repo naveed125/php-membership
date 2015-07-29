@@ -1,0 +1,16 @@
+{
+    "name": "naveed125/php-membership",
+    "version": "1.0.0",
+    "dist": {
+        "url": "https://github.com/naveed125/php-membership",
+        "type": "vcs"
+    },
+    "autoload": {
+        "files": ["membership.php"]
+    },
+    "require": {
+        "phpmailer/phpmailer": "^5.2",
+        "monolog/monolog": "^1.15",
+        "facebook/php-sdk-v4": "^5.0"
+    }
+}
