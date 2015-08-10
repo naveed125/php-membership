@@ -283,7 +283,7 @@ class Membership {
         }
         
         $user = new User($this->db, $this->logger);
-        if(!$user->getById($id)){
+        if(!$user->getById($id) or  $user->source != User::SOURCE_LOCAL){
         	return array(false, self::ERROR_DOES_NOT_EXIST);
         }
         
@@ -342,7 +342,7 @@ class Membership {
         }
         
         $user = new User($this->db, $this->logger);
-        if(!$user->getByEmail($email)){
+        if(!$user->getByEmail($email) or $user->source != User::SOURCE_LOCAL){
         	return array(false, self::ERROR_DOES_NOT_EXIST);
         }
 
