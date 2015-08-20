@@ -332,6 +332,34 @@ class Membership {
     }
     
     /**
+     * get user details - works for local users onnly
+     * @param int $id
+     */
+    public function details($id){
+    
+    	if(empty($id)){
+    		return array(false, self::ERROR_DOES_NOT_EXIST);
+    	}
+        
+    	$user = new User($this->db, $this->logger);
+    	if(!$user->getById($id) or $user->source != User::SOURCE_LOCAL){
+    		return array(false, self::ERROR_DOES_NOT_EXIST);
+    	}
+            
+    	if($user->status == USER::STATUS_UNVERIFIED){
+    		return array(false, self::ERROR_EMAIL_NOT_VERIFIED);
+    	}
+    
+    	// only return allowed details
+    	$ret = new \stdClass();
+    	foreach(array('id', 'name', 'email', 'phone') as $allowed){
+    		$ret->$allowed = $user->$allowed;
+    	}
+    	return array(true, $ret);
+    }
+    
+    
+    /**
      * forgot pswd - sends email
      * @param string $email
      */
