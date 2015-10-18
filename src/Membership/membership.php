@@ -99,7 +99,7 @@ class Membership {
         
         // non-local users are not allowed to login with user name and password
         if($user->source != User::SOURCE_LOCAL){
-        	return array(false, self::ERROR_DOES_NOT_EXIST);
+            return array(false, self::ERROR_DOES_NOT_EXIST);
         }
         
         if (password_needs_rehash($user->pswd, PASSWORD_BCRYPT)){
@@ -117,13 +117,13 @@ class Membership {
         
         $session = new Session($this->db, $this->logger);
         if( ! $session->getByUserId($user->id)){
-        	$session->userId = $user->id;
-        	$session->createdAt = time();
+            $session->userId = $user->id;
+            $session->createdAt = time();
         }
         $session->token = bin2hex(openssl_random_pseudo_bytes(32));
         $session->expires = time() + $expires;
         if( ! $session->save()) {
-        	return array(false, self::ERROR_INTERNAL_ERROR);
+            return array(false, self::ERROR_INTERNAL_ERROR);
         }
         
         return array(true, $session);
@@ -136,40 +136,40 @@ class Membership {
      * @return array
      */
     public function facebook($token, $expires = 86400){
-    	
-    	if(empty($this->fb_app_id) or empty($this->fb_app_secret) or empty($token)){
-    		if($this->logger) $this->logger->addError("Facebook not properly configured");
-    		return array(false, self::ERROR_FACEBOOK_ERROR);
-    	}
-    	
-    	// get user info from facebook
-    	$fb = new \Facebook\Facebook([
-    		'app_id' => $this->fb_app_id,
-    		'app_secret' => $this->fb_app_secret,
-    		'default_graph_version' => 'v2.4',
-    		'default_access_token' => $token,
-    	]);
-    	
-    	try {
-    		$response = $fb->get('/me?fields=name,email');
-    		$me = $response->getGraphUser();
-    		$name = $me->getName();
-    		$email = $me->getField('email');
-    	}
-    	catch(\Facebook\Exceptions\FacebookResponseException $e) {
+
+        if(empty($this->fb_app_id) or empty($this->fb_app_secret) or empty($token)){
+            if($this->logger) $this->logger->addError("Facebook not properly configured");
+            return array(false, self::ERROR_FACEBOOK_ERROR);
+        }
+
+        // get user info from facebook
+        $fb = new \Facebook\Facebook([
+            'app_id' => $this->fb_app_id,
+            'app_secret' => $this->fb_app_secret,
+            'default_graph_version' => 'v2.4',
+            'default_access_token' => $token,
+        ]);
+
+        try {
+            $response = $fb->get('/me?fields=name,email');
+            $me = $response->getGraphUser();
+            $name = $me->getName();
+            $email = $me->getField('email');
+        }
+        catch(\Facebook\Exceptions\FacebookResponseException $e) {
             if($this->logger) $this->logger->addError('Facebook Graph returned an error: ' . $e->getMessage());
-    		return array(false, self::ERROR_FACEBOOK_ERROR);
-    	}
-    	catch(\Facebook\Exceptions\FacebookSDKException $e) {
+            return array(false, self::ERROR_FACEBOOK_ERROR);
+        }
+        catch(\Facebook\Exceptions\FacebookSDKException $e) {
             if($this->logger) $this->logger->addError('Facebook SDK returned an error: ' . $e->getMessage());
-    		return array(false, self::ERROR_FACEBOOK_ERROR);
-    	}
-    	
-    	if(empty($email) or empty($name)){
-    		return array(false, self::ERROR_FACEBOOK_ERROR);
-    	}
-    	
-    	// check if a user with this email already exists
+            return array(false, self::ERROR_FACEBOOK_ERROR);
+        }
+
+        if(empty($email) or empty($name)){
+            return array(false, self::ERROR_FACEBOOK_ERROR);
+        }
+
+        // check if a user with this email already exists
         $user = new User($this->db, $this->logger);
         if(!$user->getByEmail($email)){
           // create local user
@@ -180,23 +180,23 @@ class Membership {
           $user->source = User::SOURCE_FACEBOOK;
           $user->status = User::STATUS_ENABLED;
           if(!$user->save()){
-          	return array(false, self::ERROR_INTERNAL_ERROR);
+            return array(false, self::ERROR_INTERNAL_ERROR);
           }
         }
-    	
-    	// establish a session for this user
-    	$session = new Session($this->db, $this->logger);
-    	if(!$session->getByUserId($user->id)){
-    		$session->userId = $user->id;
-    		$session->createdAt = time();
-    	}
-    	$session->token = bin2hex(openssl_random_pseudo_bytes(32));
-    	$session->expires = time() + $expires;
-    	if(!$session->save()) {
-    		return array(false, self::ERROR_INTERNAL_ERROR);
-    	}
-    	
-    	return array(true, $session);
+
+        // establish a session for this user
+        $session = new Session($this->db, $this->logger);
+        if(!$session->getByUserId($user->id)){
+            $session->userId = $user->id;
+            $session->createdAt = time();
+        }
+        $session->token = bin2hex(openssl_random_pseudo_bytes(32));
+        $session->expires = time() + $expires;
+        if(!$session->save()) {
+            return array(false, self::ERROR_INTERNAL_ERROR);
+        }
+
+        return array(true, $session);
     }
     
     /**
@@ -205,12 +205,12 @@ class Membership {
      * @return array
      */
     public function logout($session){
-    	if($this->app->session->id > 0) {
-    		$session->expires = 0;
-    		$session->save();
-    	}
-    	
-    	return array(true, 0);
+        if($this->app->session->id > 0) {
+            $session->expires = 0;
+            $session->save();
+        }
+
+        return array(true, 0);
     }
     
     /**
@@ -238,7 +238,7 @@ class Membership {
         
         $user = new User($this->db, $this->logger);
         if($user->getByEmail($email)){
-        	return array(false, self::ERROR_ALREADY_EXISTS);
+            return array(false, self::ERROR_ALREADY_EXISTS);
         }
                 
         $this->db->beginTransaction();
@@ -251,16 +251,16 @@ class Membership {
         $user->status = User::STATUS_UNVERIFIED;
         $user->phone = $phone;
         if(!$user->save()){
-        	$this->db->rollBack();
-        	return array(false, self::ERROR_INTERNAL_ERROR);
+            $this->db->rollBack();
+            return array(false, self::ERROR_INTERNAL_ERROR);
         }
         
         $vcode = new VerificationCode($this->db, $this->logger);
         $vcode->userId = $user->id;
         $vcode->code = bin2hex(openssl_random_pseudo_bytes(32));
         if(!$vcode->save()){
-        	$this->db->rollBack();
-        	return array(false, self::ERROR_INTERNAL_ERROR);
+            $this->db->rollBack();
+            return array(false, self::ERROR_INTERNAL_ERROR);
         }
         
         $this->db->commit();
@@ -294,42 +294,42 @@ class Membership {
         
         $user = new User($this->db, $this->logger);
         if(!$user->getById($id) or  $user->source != User::SOURCE_LOCAL){
-        	return array(false, self::ERROR_DOES_NOT_EXIST);
+            return array(false, self::ERROR_DOES_NOT_EXIST);
         }
         
         if($user->email != $email){
-        	$test = new User($this->db, $this->logger);
-        	if($test->getByEmail($email)){
-        		return array(false, self::ERROR_ALREADY_EXISTS);
-        	}
-        	$user->email = $email;
-        	$user->status = User::STATUS_UNVERIFIED;
+            $test = new User($this->db, $this->logger);
+            if($test->getByEmail($email)){
+                return array(false, self::ERROR_ALREADY_EXISTS);
+            }
+            $user->email = $email;
+            $user->status = User::STATUS_UNVERIFIED;
         }
                 
         $user->name = $name;
         $user->phone = $phone;
         
         if(!empty($pswd) and $pswd != '********'){
-        	$user->pswd = password_hash("{$pswd}{$this->salt}", PASSWORD_BCRYPT);
+            $user->pswd = password_hash("{$pswd}{$this->salt}", PASSWORD_BCRYPT);
         }
         
         $this->db->beginTransaction();
         
         if(!$user->save()){
-        	$this->db->rollBack();
-        	return array(false, self::ERROR_INTERNAL_ERROR);
+            $this->db->rollBack();
+            return array(false, self::ERROR_INTERNAL_ERROR);
         }
         
         if($user->status == USER::STATUS_UNVERIFIED){
-	        $vcode = new VerificationCode($this->db, $this->logger);
-	        $vcode->getByUserId($user->id);
-	        $vcode->userId = $user->id;
-	        $vcode->code = bin2hex(openssl_random_pseudo_bytes(32));
-	        $vcode->sendCount++;
-	        if(!$vcode->save()){
-	        	$this->db->rollBack();
-	        	return array(false, self::ERROR_INTERNAL_ERROR);
-	        }
+            $vcode = new VerificationCode($this->db, $this->logger);
+            $vcode->getByUserId($user->id);
+            $vcode->userId = $user->id;
+            $vcode->code = bin2hex(openssl_random_pseudo_bytes(32));
+            $vcode->sendCount++;
+            if(!$vcode->save()){
+                $this->db->rollBack();
+                return array(false, self::ERROR_INTERNAL_ERROR);
+            }
             $this->sendVerificationEmail($user->id, $email, $vcode->code, $name);
         }
         
@@ -345,25 +345,25 @@ class Membership {
      */
     public function details($id){
     
-    	if(empty($id)){
-    		return array(false, self::ERROR_DOES_NOT_EXIST);
-    	}
+        if(empty($id)){
+            return array(false, self::ERROR_DOES_NOT_EXIST);
+        }
         
-    	$user = new User($this->db, $this->logger);
-    	if(!$user->getById($id) or $user->source != User::SOURCE_LOCAL){
-    		return array(false, self::ERROR_DOES_NOT_EXIST);
-    	}
+        $user = new User($this->db, $this->logger);
+        if(!$user->getById($id) or $user->source != User::SOURCE_LOCAL){
+            return array(false, self::ERROR_DOES_NOT_EXIST);
+        }
             
-    	if($user->status == USER::STATUS_UNVERIFIED){
-    		return array(false, self::ERROR_EMAIL_NOT_VERIFIED);
-    	}
+        if($user->status == USER::STATUS_UNVERIFIED){
+            return array(false, self::ERROR_EMAIL_NOT_VERIFIED);
+        }
     
-    	// only return allowed details
-    	$ret = new \stdClass();
-    	foreach(array('id', 'name', 'email', 'phone') as $allowed){
-    		$ret->$allowed = $user->$allowed;
-    	}
-    	return array(true, $ret);
+        // only return allowed details
+        $ret = new \stdClass();
+        foreach(array('id', 'name', 'email', 'phone') as $allowed){
+            $ret->$allowed = $user->$allowed;
+        }
+        return array(true, $ret);
     }
     
     
@@ -380,23 +380,23 @@ class Membership {
         
         $user = new User($this->db, $this->logger);
         if(!$user->getByEmail($email) or $user->source != User::SOURCE_LOCAL){
-        	return array(false, self::ERROR_DOES_NOT_EXIST);
+            return array(false, self::ERROR_DOES_NOT_EXIST);
         }
 
         $prk = new PasswordResetCode($this->db, $this->logger);
         if($prk->getByUserId($user->id)){
-        	if($prk->expires > time()){
-        		return array(false, self::ERROR_ALREADY_EXISTS);
-        	}
+            if($prk->expires > time()){
+                return array(false, self::ERROR_ALREADY_EXISTS);
+            }
         }
         else {
-        	$prk->userId = $user->id;
+            $prk->userId = $user->id;
         }
         $prk->code = bin2hex(openssl_random_pseudo_bytes(32));
         $prk->expires = time() + 10800;
-       	if(!$prk->save()){
-       		return array(false, self::ERROR_INTERNAL_ERROR);
-       	}
+        if(!$prk->save()){
+            return array(false, self::ERROR_INTERNAL_ERROR);
+        }
         
         // send email with pswd reset link
         $this->sendPswdResetCodeEmail($user->id, $email, $user->name, $prk->code);
@@ -486,11 +486,11 @@ class Membership {
      * @return bool
      */
     private function sendVerificationEmail($userId, $email, $code, $name, $new = true){
-    	
-    	if(empty($this->mailer)){
-    		return false;
-    	}
-    	    	
+
+        if(empty($this->mailer)){
+            return false;
+        }
+
         $action = $new ? ' creating an ' : ' updating your ';
         $msg = "Dear {$name}\n\n"
              . "Thank you for {$action} your account at {$this->app_name}.\n\n"
@@ -506,7 +506,7 @@ class Membership {
         
         if (!$this->mailer->send()) {
             if($this->logger) $this->logger->addError("MAILER ERROR: " . $this->mailer->ErrorInfo);
-        	return false;
+            return false;
         }
 
         if($this->logger) $this->logger->addDebug("Message sent to {$email}!");
@@ -522,11 +522,11 @@ class Membership {
      * @return bool
      */
     private function sendPswdResetCodeEmail($userId, $email, $name, $code){
-    	
-    	if(empty($this->mailer)){
-    		return false;
-    	}
-    	 
+
+        if(empty($this->mailer)){
+            return false;
+        }
+
         $msg = "Dear " . $name . "\n\n"
              . "Please use the following link to reset your password for {$this->app_name}:\n\n"
              . "{$this->reset_url}/{$userId}/{$code}\n\n"
@@ -541,7 +541,7 @@ class Membership {
         
         if (!$this->mailer->send()) {
             if($this->logger) $this->logger->addError("MAILER ERROR: " . $this->mailer->ErrorInfo);
-        	return false;
+            return false;
         }
 
         if($this->logger) $this->logger->addDebug("Message sent to {$email}!");
@@ -556,7 +556,7 @@ class Membership {
      */
     public function delete($userId){
 
-    	$user = new User($this->db, $this->logger);
+        $user = new User($this->db, $this->logger);
         if($user->getById($userId)) {
             $user->email = "D_" . bin2hex(openssl_random_pseudo_bytes(8)) . "_" . str_replace('@', '#', $user->email);
             $user->status = User::STATUS_DELETED;
@@ -564,7 +564,7 @@ class Membership {
             return true;
         }
       
-      	return false;
+        return false;
     }
     
     

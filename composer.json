@@ -1,14 +1,15 @@
 {
     "name": "naveed125/php-membership",
-    "version": "1.0.0",
-    "dist": {
-        "url": "https://github.com/naveed125/php-membership",
-        "type": "vcs"
-    },
+    "description": "A simple user management library that supports things like signin, sign-out, sign-up, forgot-password and email-verification.",
+    "keywords": ["php", "membership", "psr-4"],
+    "homepage": "http://github.com/naveed125/php-membership",
+    "type": "library",
+    "license": "MIT",
     "autoload": {
-        "files": ["membership.php"]
+        "psr-4": {"Membership\\": "src/Membership"}
     },
     "require": {
+        "php": ">=5.4.0",
         "phpmailer/phpmailer": "^5.2",
         "monolog/monolog": "^1.15",
         "facebook/php-sdk-v4": "^5.0"
