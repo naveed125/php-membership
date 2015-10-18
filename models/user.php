@@ -46,8 +46,8 @@ class User extends BaseModel {
 	
 	/**
 	 * Constructor
-	 * @param PDO $db
-	 * @param Monolog $logger
+	 * @param \PDO $db
+	 * @param \Monolog $logger
 	 */
 	public function __construct($db, $logger = null){
 		parent::__construct($db, $logger);
@@ -56,6 +56,7 @@ class User extends BaseModel {
 	/**
 	 * get user by email
 	 * @param string $email
+	 * @return array
 	 */
 	public function getByEmail($email){
 		return $this->getByParams(
@@ -66,8 +67,9 @@ class User extends BaseModel {
 	}
 	
 	/**
-	 * get user by email
-	 * @param string $email
+	 * get user by id
+	 * @param string $id
+	 * @return bool
 	 */
 	public function getById($id){
 		return $this->getByParams(
@@ -78,8 +80,9 @@ class User extends BaseModel {
 	}
 	
 	/**
-	 * finds a user by email
-	 * @param string $email
+	 * finds a user by params
+	 * @param array $params
+	 * @return bool
 	 */
 	private function getByParams($params){
 		$sql = <<<EOF

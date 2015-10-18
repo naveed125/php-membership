@@ -8,7 +8,7 @@ require_once(dirname(__FILE__) . '/models/verification-code.php');
 require_once(dirname(__FILE__) . '/models/password-reset-code.php');
 
 /**
- * Implements memebership functions - signin/signup/signout etc. 
+ * Implements membership functions - sign-in/sign-up/sign-out etc.
  * @author Naveed Khan
  */
 class Membership {
@@ -22,6 +22,7 @@ class Membership {
     /**
      * Error codes and other constants
      */
+    const SUCCESS = 1000;
     const ERROR_INVALID_EMAIL_OR_PSWD = 1001;
     const ERROR_EMAIL_NOT_VERIFIED = 1002;
     const ERROR_ACCOUNT_DISABLED = 1003;
@@ -72,6 +73,10 @@ class Membership {
     
     /**
      * login a user and create a session
+     * @param string $email
+     * @param string $pswd
+     * @param int $expires
+     * @return array
      */
     public function login($email, $pswd, $expires = 86400){
         
@@ -127,12 +132,13 @@ class Membership {
     /**
      * Login using facebook
      * @param string $token
+     * @param int $expires
      * @return array
      */
     public function facebook($token, $expires = 86400){
     	
     	if(empty($this->fb_app_id) or empty($this->fb_app_secret) or empty($token)){
-    		$this->logger->addError("Facebook not properly configured");
+    		if($this->logger) $this->logger->addError("Facebook not properly configured");
     		return array(false, self::ERROR_FACEBOOK_ERROR);
     	}
     	
@@ -151,11 +157,11 @@ class Membership {
     		$email = $me->getField('email');
     	}
     	catch(\Facebook\Exceptions\FacebookResponseException $e) {
-    		$this->logger->addError('Facebook Graph returned an error: ' . $e->getMessage());
+            if($this->logger) $this->logger->addError('Facebook Graph returned an error: ' . $e->getMessage());
     		return array(false, self::ERROR_FACEBOOK_ERROR);
     	}
     	catch(\Facebook\Exceptions\FacebookSDKException $e) {
-    		$this->logger->addError('Facebook SDK returned an error: ' . $e->getMessage());
+            if($this->logger) $this->logger->addError('Facebook SDK returned an error: ' . $e->getMessage());
     		return array(false, self::ERROR_FACEBOOK_ERROR);
     	}
     	
@@ -194,7 +200,9 @@ class Membership {
     }
     
     /**
-     * logout a user and desrtoy the session
+     * logout a user and destroy the session
+     * @param $session
+     * @return array
      */
     public function logout($session){
     	if($this->app->session->id > 0) {
@@ -210,7 +218,8 @@ class Membership {
      * @param string $email
      * @param string $pswd
      * @param string $name
-     * @param string $type
+     * @param int $source
+     * @param int $type
      * @return array
      */
     public function register($name, $email, $pswd, $phone, $source = User::SOURCE_LOCAL, $type = User::TYPE_REGULAR_USER){
@@ -266,7 +275,8 @@ class Membership {
      * @param string $name
      * @param string $email
      * @param string $pswd
-     * @param string phone
+     * @param string $phone
+     * @return array
      */
     public function update($id, $name, $email, $pswd, $phone){
         
@@ -320,13 +330,10 @@ class Membership {
 	        	$this->db->rollBack();
 	        	return array(false, self::ERROR_INTERNAL_ERROR);
 	        }
+            $this->sendVerificationEmail($user->id, $email, $vcode->code, $name);
         }
         
         $this->db->commit();
-        
-        if($user->status == USER::STATUS_UNVERIFIED){
-        	$this->sendVerificationEmail($user->id, $email, $vcode->code, $name);
-        }
         
         return array(true, 0);
     }
@@ -334,6 +341,7 @@ class Membership {
     /**
      * get user details - works for local users onnly
      * @param int $id
+     * @return array
      */
     public function details($id){
     
@@ -362,6 +370,7 @@ class Membership {
     /**
      * forgot pswd - sends email
      * @param string $email
+     * @return array
      */
     public function forgot($email){
         
@@ -397,6 +406,7 @@ class Membership {
     /**
      * resend confirmation email 
      * @param string $email
+     * @return int
      */
     public function resend($email){
 
@@ -433,41 +443,47 @@ class Membership {
     
     /**
      * confirm code sent in email
+     * @param int $userId
      * @param string $code
+     * @return bool
      */
-    public function confirm($userId, $code){
-      
-      $query = $this->db->get_where(self::TABLE_USERS, array('id' => $userId),    1, 0);
-      if($query->num_rows() < 1){
-        return array(false, 'Invalid verification attempt.');
-      }
-      $user = array_shift($query->result());
-      
-      if($user->status != User::STATUS_UNVERIFIED){
-        return array(false, 'Your email is already verified, please <a href="' . base_url('/user/signin') . '">Sign in</a>.');
-      }
-      
-        $params = array(
-            'user_id' => $userId,
-            'code' => $code
-        );
-        $query = $this->db->get_where(self::TABLE_VERIFICATION_CODES, $params, 1, 0);
-        if($query->num_rows() < 1){
-            return array(false, 'We are unable to confirm verification code at the moment. Please contact <a href="mailto:{$this->support_email}">{$this->support_email}</a>.');
-        }
-        
-        $user->status = User::STATUS_ENABLED;
-        $this->db->update(self::TABLE_USERS, $user, array('id' => $userId));
-        
-        return array(true, 'Success! Thankyou for verifying your email with us. You may <a href="' . base_url('/user/signin') . '">Sign In</a> to access your account.');
+    public function confirm($userId, $code)
+    {
+        // TODO FIX THIS
+        return array(false, "not implemented");
+
+//        $query = $this->db->get_where(self::TABLE_USERS, array('id' => $userId), 1, 0);
+//        if ($query->num_rows() < 1) {
+//            return array(false, 'Invalid verification attempt.');
+//        }
+//        $user = array_shift($query->result());
+//
+//        if ($user->status != User::STATUS_UNVERIFIED) {
+//            return array(false, 'Your email is already verified, please <a href="' . base_url('/user/signin') . '">Sign in</a>.');
+//        }
+//
+//        $params = array(
+//            'user_id' => $userId,
+//            'code' => $code
+//        );
+//        $query = $this->db->get_where(self::TABLE_VERIFICATION_CODES, $params, 1, 0);
+//        if ($query->num_rows() < 1) {
+//            return array(false, 'We are unable to confirm verification code at the moment. Please contact <a href="mailto:{$this->support_email}">{$this->support_email}</a>.');
+//        }
+//
+//        $user->status = User::STATUS_ENABLED;
+//        $this->db->update(self::TABLE_USERS, $user, array('id' => $userId));
+//
+//        return array(true, 'Success! Thankyou for verifying your email with us. You may <a href="' . base_url('/user/signin') . '">Sign In</a> to access your account.');
     }
     
     /**
-     * Helper function to send verifiction email
+     * Helper function to send verification email
      * @param int $userId
      * @param string $email
      * @param string $code
      * @param string $name
+     * @return bool
      */
     private function sendVerificationEmail($userId, $email, $code, $name, $new = true){
     	
@@ -477,7 +493,7 @@ class Membership {
     	    	
         $action = $new ? ' creating an ' : ' updating your ';
         $msg = "Dear {$name}\n\n"
-             . "Thank you for{$action} account at {$this->app_name}.\n\n"
+             . "Thank you for {$action} your account at {$this->app_name}.\n\n"
              . "Please confirm your email {$email} using the link below: \n\n"
              . "{$this->verify_url}/{$userId}/{$code}\n\n"
              . "--\nThanks\n{$this->support_name}\n{$this->support_email}\n";
@@ -489,11 +505,11 @@ class Membership {
         $this->mailer->isHTML(false);
         
         if (!$this->mailer->send()) {
-        	$this->logger->addError("MAILER ERROR: " . $this->mailer->ErrorInfo);
+            if($this->logger) $this->logger->addError("MAILER ERROR: " . $this->mailer->ErrorInfo);
         	return false;
         }
-        
-        $this->logger->addDebug("Message sent to {$email}!");
+
+        if($this->logger) $this->logger->addDebug("Message sent to {$email}!");
         return true;
     }
     
@@ -503,6 +519,7 @@ class Membership {
      * @param string $email
      * @param string $name
      * @param string $code
+     * @return bool
      */
     private function sendPswdResetCodeEmail($userId, $email, $name, $code){
     	
@@ -523,27 +540,31 @@ class Membership {
         $this->mailer->isHTML(false);
         
         if (!$this->mailer->send()) {
-        	$this->logger->addError("MAILER ERROR: " . $this->mailer->ErrorInfo);
+            if($this->logger) $this->logger->addError("MAILER ERROR: " . $this->mailer->ErrorInfo);
         	return false;
         }
-        
-        $this->logger->addDebug("Message sent to {$email}!");
+
+        if($this->logger) $this->logger->addDebug("Message sent to {$email}!");
         return true;
     }
     
     /**
      * Delete a player by renaming its email so login will not work
-     * but any exiting user data including foriegn keys are preserved
+     * but any exiting user data including foreign keys are preserved
      * @param int $userId
+     * @return bool
      */
     public function delete($userId){
 
-    	$user = new User($this->db, $this->logger); 
-      	$user->email = "D_" . bin2hex(openssl_random_pseudo_bytes(8)) . "_" . str_replace('@', '#', $userInfo->email);
-      	$user->status = User::STATUS_DELETED;
-      	$user->save();
+    	$user = new User($this->db, $this->logger);
+        if($user->getById($userId)) {
+            $user->email = "D_" . bin2hex(openssl_random_pseudo_bytes(8)) . "_" . str_replace('@', '#', $user->email);
+            $user->status = User::STATUS_DELETED;
+            $user->save();
+            return true;
+        }
       
-      	return true;;
+      	return false;
     }
     
     
