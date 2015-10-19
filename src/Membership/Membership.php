@@ -2,10 +2,10 @@
 
 namespace Membership;
 
-require_once(dirname(__FILE__) . '/models/user.php');
-require_once(dirname(__FILE__) . '/models/session.php');
-require_once(dirname(__FILE__) . '/models/verification-code.php');
-require_once(dirname(__FILE__) . '/models/password-reset-code.php');
+require_once(__DIR__ . '/models/user.php');
+require_once(__DIR__ . '/models/session.php');
+require_once(__DIR__ . '/models/verification-code.php');
+require_once(__DIR__ . '/models/password-reset-code.php');
 
 /**
  * Implements membership functions - sign-in/sign-up/sign-out etc.
@@ -17,8 +17,7 @@ class Membership {
      * Tables
      */
     const TABLE_VERIFICATION_CODES = 'membership_verification_codes';
-    const TABLE_SESSION = 'membership_session';
-    
+
     /**
      * Error codes and other constants
      */
@@ -54,21 +53,48 @@ class Membership {
     
     /**
      * Constructor
-     * @param params 
+     * @param params
+     * @throws \Exception
      */
-    public function __construct($params){
+    public function __construct($params)
+    {
+        if(empty($params['db'])){
+            throw new \Exception("Parameter `db` is required and must be a PDO instance.");
+        }
         $this->db = $params['db'];
+
+        if(empty($params['salt'] || strlen($params['salt']) < 8)){
+            throw new \Exception("Parameter `salt` is required and must be atleast 8 characters long");
+        }
         $this->salt = $params['salt'];
-        $this->support_email = $params['support_email'];
-        $this->support_name = $params['support_name'];
-        $this->app_name = $params['app_name'];
-        $this->debug_mode = $params['debug_mode'];
-        $this->verify_url = isset($params['verify_url']) ? $params['verify_url'] : null;
-        $this->reset_url = isset($params['reset_url']) ? $params['reset_url'] : null;
-        $this->logger = isset($params['logger']) ? $params['logger'] : null;
-        $this->mailer = isset($params['mailer']) ? $params['mailer'] : null;
-        $this->fb_app_id = isset($params['fb_app_id']) ? $params['fb_app_id'] : null;
-        $this->fb_app_secret = isset($params['fb_app_secret']) ? $params['fb_app_secret'] : null;
+
+        if(!empty($params['mailer'])) {
+            $this->mailer = isset($params['mailer']) ? $params['mailer'] : null;
+            $this->app_name = $params['app_name'];
+            $this->support_email = $params['support_email'];
+            $this->support_name = $params['support_name'];
+        }
+
+        if(isset($params['debug_mode'])){
+            $this->debug_mode = $params['debug_mode'];
+        }
+
+        if(isset($params['verify_url']) ) {
+            $this->verify_url = $params['verify_url'];
+        }
+
+        if(isset($params['reset_url'])){
+            $this->reset_url = $params['reset_url'];
+        }
+
+        if(isset($params['logger'])){
+            $this->logger =  $params['logger'];
+        }
+
+        if(isset($params['fb_app_id']) && isset($params['fb_app_secret'])){
+            $this->fb_app_id = $params['fb_app_id'];
+            $this->fb_app_secret =  $params['fb_app_secret'];
+        }
     }
     
     /**
@@ -201,16 +227,37 @@ class Membership {
     
     /**
      * logout a user and destroy the session
-     * @param $session
+     * @param $sessionToken
      * @return array
      */
-    public function logout($session){
-        if($this->app->session->id > 0) {
+    public function logout($sessionToken){
+
+        $session = new Session($this->db, $this->logger);
+        $session->getByToken($sessionToken, true);
+        if($session) {
             $session->expires = 0;
             $session->save();
         }
 
         return array(true, 0);
+    }
+
+    /**
+     * finds a user from session token
+     * @param $sessionToken
+     * @return Session
+     */
+    public function getLoggedInUser($sessionToken){
+        $session = new Session($this->db, $this->logger);
+        if($session->getByToken($sessionToken, true))
+        {
+            $user = new User($this->db, $this->logger);
+            if($user->getById($session->userId))
+            {
+                return $user;
+            }
+        }
+        return null;
     }
     
     /**

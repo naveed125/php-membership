@@ -6,7 +6,7 @@
     "type": "library",
     "license": "MIT",
     "autoload": {
-        "psr-4": {"Membership\\": "src/Membership"}
+        "psr-4": {"Membership\\": "src/"}
     },
     "require": {
         "php": ">=5.4.0",
