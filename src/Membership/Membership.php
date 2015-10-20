@@ -233,8 +233,7 @@ class Membership {
     public function logout($sessionToken){
 
         $session = new Session($this->db, $this->logger);
-        $session->getByToken($sessionToken, true);
-        if($session) {
+        if($session->getByToken($sessionToken, true)) {
             $session->expires = 0;
             $session->save();
         }
