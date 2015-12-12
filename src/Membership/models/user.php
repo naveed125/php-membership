@@ -17,6 +17,7 @@ class User extends BaseModel {
 	public $type = null;
 	public $source = null;
 	public $phone = null;
+	public $failedAttempts = 0;
 	
 	/**
 	 * Sources for user id
@@ -95,7 +96,8 @@ class User extends BaseModel {
 				status,
 				user_type,
 				source,
-				phone
+				phone,
+		        failed_attempts
 			FROM membership_users
 			WHERE id > 0
 EOF;
@@ -130,6 +132,7 @@ EOF;
 		$this->type = $row['user_type'];
 		$this->source = $row['source'];
 		$this->phone = $row['phone'];
+		$this->failedAttempts = $row['failed_attempts'];
 		return true;
 	}
 	
@@ -146,7 +149,8 @@ EOF;
 					email = :email,
 					pswd = :pswd,
 					status = :status,
-					phone = :phone
+					phone = :phone,
+			        failed_attempts = :failed_attempts
 				WHERE id = :id
 EOF;
 
@@ -157,6 +161,7 @@ EOF;
 				array('pswd', $this->pswd, \PDO::PARAM_STR),
 				array('status', $this->status, \PDO::PARAM_INT),
 				array('phone', $this->phone, \PDO::PARAM_STR),
+			    array('failed_attempts', $this->failedAttempts, \PDO::PARAM_STR),
 			);
 		}
 		else {

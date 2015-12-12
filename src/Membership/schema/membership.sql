@@ -57,7 +57,7 @@ DROP TABLE IF EXISTS membership_profiles;
 CREATE TABLE membership_profiles (
 
   id INT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-  user_id INT UNSIGNED NOT NULL REFERENCES membership_users(id),
+  user_id INT UNSIGNED NOT NULL REFERENCES membership_users(id)
 )
 ENGINE=InnoDB
 DEFAULT CHARACTER SET utf8;

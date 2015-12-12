@@ -32,6 +32,8 @@ class Membership {
     const ERROR_DOES_NOT_EXIST = 1008;
     const ERROR_ALREADY_VERIFIED = 1009;
     const ERROR_FACEBOOK_ERROR = 1010;
+    const ERROR_ACCOUNT_LOCKED = 1011;
+    const ERROR_VERIFICATION_ERROR = 1012;
     
     const MIN_PSWD_LENGTH = 8;
     
@@ -50,6 +52,7 @@ class Membership {
     private $reset_url = null;
     private $fb_app_id = null;
     private $fb_app_secret = null;
+    private $max_failed_attempts = 3;
     
     /**
      * Constructor
@@ -63,7 +66,7 @@ class Membership {
         }
         $this->db = $params['db'];
 
-        if(empty($params['salt'] || strlen($params['salt']) < 8)){
+        if(empty($params['salt']) || strlen($params['salt']) < 8){
             throw new \Exception("Parameter `salt` is required and must be atleast 8 characters long");
         }
         $this->salt = $params['salt'];
@@ -95,6 +98,10 @@ class Membership {
             $this->fb_app_id = $params['fb_app_id'];
             $this->fb_app_secret =  $params['fb_app_secret'];
         }
+        
+        if(!empty($params['max_failed_attempts'])){
+            $this->max_failed_attempts = $params['max_failed_attempts'];
+        }
     }
     
     /**
@@ -110,7 +117,7 @@ class Membership {
             return array(false, self::ERROR_INVALID_EMAIL_OR_PSWD);
         }
         
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        if ( ! filter_var($email, FILTER_VALIDATE_EMAIL)) {
             return array(false, self::ERROR_INVALID_EMAIL_OR_PSWD);
         }
         
@@ -119,8 +126,18 @@ class Membership {
         }
         
         $user = new User($this->db, $this->logger);
-        if(!$user->getByEmail($email) or !password_verify($pswd . $this->salt, $user->pswd)){
-          return array(false, self::ERROR_INVALID_EMAIL_OR_PSWD);
+        if( ! $user->getByEmail($email)){
+            return array(false, self::ERROR_INVALID_EMAIL_OR_PSWD);
+        }
+        
+        if($user->failedAttempts > $this->max_failed_attempts){
+            return array(false, self::ERROR_ACCOUNT_LOCKED);
+        }
+        
+        if( ! password_verify($pswd . $this->salt, $user->pswd)){
+            $user->failedAttempts++;
+            $user->save();
+            return array(false, self::ERROR_INVALID_EMAIL_OR_PSWD);
         }
         
         // non-local users are not allowed to login with user name and password
@@ -130,7 +147,7 @@ class Membership {
         
         if (password_needs_rehash($user->pswd, PASSWORD_BCRYPT)){
           $user->pswd = password_hash($pswd . $this->salt, PASSWORD_BCRYPT);
-          $user->update(); 
+          $user->save(); 
         }
         
         if($user->status == User::STATUS_UNVERIFIED){
@@ -169,12 +186,12 @@ class Membership {
         }
 
         // get user info from facebook
-        $fb = new \Facebook\Facebook([
+        $fb = new \Facebook\Facebook(array(
             'app_id' => $this->fb_app_id,
             'app_secret' => $this->fb_app_secret,
             'default_graph_version' => 'v2.4',
             'default_access_token' => $token,
-        ]);
+        ));
 
         try {
             $response = $fb->get('/me?fields=name,email');
@@ -454,73 +471,68 @@ class Membership {
      * @param string $email
      * @return int
      */
-    public function resend($email){
-
-        if(empty($email)){
-            return self::ERROR_INVALID_EMAIL_OR_PSWD;
+    public function resend($email)
+    {
+        if(empty($email))
+        {
+            return array(false, self::ERROR_INVALID_EMAIL_OR_PSWD);
         }
         
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            return self::ERROR_INVALID_EMAIL_OR_PSWD;
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) 
+        {
+            return array(false, self::ERROR_INVALID_EMAIL_OR_PSWD);
         }
         
-        $query = $this->db->get_where(self::TABLE_USERS, array('email' => $email),    1, 0);
-        if($query->num_rows() < 1){
-            return self::ERROR_DOES_NOT_EXIST;
+        $user = new User($this->db, $this->logger);
+        if( ! $user->getByEmail($email))
+        {
+            return array(false, self::ERROR_DOES_NOT_EXIST);
         }
-        $user = array_shift($query->result());
         
-        if($user->status != User::STATUS_UNVERIFIED){
+        if($user->status != User::STATUS_UNVERIFIED)
+        {
           return self::ERROR_ALREADY_VERIFIED;
         }
         
-        $query = $this->db->get_where(self::TABLE_VERIFICATION_CODES, array('user_id' => $user->id), 1, 0);
-        if($query->num_rows() < 1){
-            return self::ERROR_INTERNAL_ERROR;
+        $vcode = new VerificationCode($this->db, $this->logger);
+        if( ! $vcode->getByUserId($user->id)){
+            return array(false, self::ERROR_DOES_NOT_EXIST);
         }
         
-        $verification = array_shift($query->result());
-        $verification->send_count++;
-        $this->db->update(self::TABLE_VERIFICATION_CODES, $verification, array('id' => $verification->id));
+        // update the code and send it
+        $vcode->code = bin2hex(openssl_random_pseudo_bytes(32));
+        if($vcode->save()){
+            return array(false, self::ERROR_INTERNAL_ERROR);
+        }
         
-        $this->sendVerificationEmail($user->id, $email, $verification->code, $user->name);
-        return self::SUCCESS;
+        $this->sendVerificationEmail($user->id, $email, $vcode->code, $name);
+        return array(true, $vcode->code);                
     }
     
     /**
-     * confirm code sent in email
+     * confirm user account via code sent in email
      * @param int $userId
      * @param string $code
      * @return bool
      */
     public function confirm($userId, $code)
     {
-        // TODO FIX THIS
-        return array(false, "not implemented");
-
-//        $query = $this->db->get_where(self::TABLE_USERS, array('id' => $userId), 1, 0);
-//        if ($query->num_rows() < 1) {
-//            return array(false, 'Invalid verification attempt.');
-//        }
-//        $user = array_shift($query->result());
-//
-//        if ($user->status != User::STATUS_UNVERIFIED) {
-//            return array(false, 'Your email is already verified, please <a href="' . base_url('/user/signin') . '">Sign in</a>.');
-//        }
-//
-//        $params = array(
-//            'user_id' => $userId,
-//            'code' => $code
-//        );
-//        $query = $this->db->get_where(self::TABLE_VERIFICATION_CODES, $params, 1, 0);
-//        if ($query->num_rows() < 1) {
-//            return array(false, 'We are unable to confirm verification code at the moment. Please contact <a href="mailto:{$this->support_email}">{$this->support_email}</a>.');
-//        }
-//
-//        $user->status = User::STATUS_ENABLED;
-//        $this->db->update(self::TABLE_USERS, $user, array('id' => $userId));
-//
-//        return array(true, 'Success! Thankyou for verifying your email with us. You may <a href="' . base_url('/user/signin') . '">Sign In</a> to access your account.');
+        $vcode = new VerificationCode($this->db, $this->logger);
+        if( ! $vcode->getByUserId($userId)){
+            return array(false, self::ERROR_VERIFICATION_ERROR);
+        }
+        
+        if( $vcode->code != $code){
+            return array(false, self::ERROR_VERIFICATION_ERROR);
+        }
+        
+        $user = new User($this->db, $this->logger);
+        if($user->getById($userId)){
+            $user->status = User::STATUS_ENABLED;
+            $user->save();
+        }
+        
+        return array(true, 0);
     }
     
     /**
@@ -539,7 +551,7 @@ class Membership {
 
         $action = $new ? ' creating an ' : ' updating your ';
         $msg = "Dear {$name}\n\n"
-             . "Thank you for {$action} your account at {$this->app_name}.\n\n"
+             . "Thank you for {$action} account at {$this->app_name}.\n\n"
              . "Please confirm your email {$email} using the link below: \n\n"
              . "{$this->verify_url}/{$userId}/{$code}\n\n"
              . "--\nThanks\n{$this->support_name}\n{$this->support_email}\n";

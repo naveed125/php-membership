@@ -20,6 +20,10 @@ class VerificationCode extends BaseModel {
 		parent::__construct($db, $logger);
 	}
 	
+	/**
+	 * Get by user id 
+	 * @param int $userId
+	 */
 	public function getByUserId($userId){
 		$sql = <<<EOF
 			SELECT
