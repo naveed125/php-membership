@@ -130,7 +130,7 @@ class Membership {
             return array(false, self::ERROR_INVALID_EMAIL_OR_PSWD);
         }
         
-        if($user->failedAttempts > $this->max_failed_attempts){
+        if($user->failedAttempts >= $this->max_failed_attempts){
             return array(false, self::ERROR_ACCOUNT_LOCKED);
         }
         
