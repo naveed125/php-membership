@@ -1,0 +1,18 @@
+language: php
+
+services:
+  - mysql
+
+test:
+    adapter: mysql2
+    database: membership
+    username: travis
+    encoding: utf8
+
+install:
+  - composer install
+
+before_script:
+  - mysql -e 'create database membership;'
+
+script: phpunit tests/membership-tests.php
