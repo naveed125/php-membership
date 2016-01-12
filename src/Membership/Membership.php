@@ -22,6 +22,7 @@ class Membership {
      * Error codes and other constants
      */
     const SUCCESS = 1000;
+    const MIN_PSWD_LENGTH = 8;
     const ERROR_INVALID_EMAIL_OR_PSWD = 1001;
     const ERROR_EMAIL_NOT_VERIFIED = 1002;
     const ERROR_ACCOUNT_DISABLED = 1003;
@@ -34,9 +35,7 @@ class Membership {
     const ERROR_FACEBOOK_ERROR = 1010;
     const ERROR_ACCOUNT_LOCKED = 1011;
     const ERROR_VERIFICATION_ERROR = 1012;
-    
-    const MIN_PSWD_LENGTH = 8;
-    
+
     /**
      * private fields - normally passed in through constructor
      */
@@ -129,35 +128,35 @@ class Membership {
         if( ! $user->getByEmail($email)){
             return array(false, self::ERROR_INVALID_EMAIL_OR_PSWD);
         }
-        
+
+        // non-local users are not allowed to login with user name and password
+        if($user->source != User::SOURCE_LOCAL){
+            return array(false, self::ERROR_DOES_NOT_EXIST);
+        }
+
+        if($user->status == User::STATUS_UNVERIFIED){
+            return array(false, self::ERROR_EMAIL_NOT_VERIFIED);
+        }
+
+        if($user->status != User::STATUS_ENABLED){
+            return array(false, self::ERROR_ACCOUNT_DISABLED);
+        }
+
         if($user->failedAttempts >= $this->max_failed_attempts){
             return array(false, self::ERROR_ACCOUNT_LOCKED);
         }
-        
+
         if( ! password_verify($pswd . $this->salt, $user->pswd)){
             $user->failedAttempts++;
             $user->save();
             return array(false, self::ERROR_INVALID_EMAIL_OR_PSWD);
         }
         
-        // non-local users are not allowed to login with user name and password
-        if($user->source != User::SOURCE_LOCAL){
-            return array(false, self::ERROR_DOES_NOT_EXIST);
-        }
-        
         if (password_needs_rehash($user->pswd, PASSWORD_BCRYPT)){
           $user->pswd = password_hash($pswd . $this->salt, PASSWORD_BCRYPT);
           $user->save(); 
         }
-        
-        if($user->status == User::STATUS_UNVERIFIED){
-          return array(false, self::ERROR_EMAIL_NOT_VERIFIED);
-        }
-        
-        if($user->status != User::STATUS_ENABLED){
-          return array(false, self::ERROR_ACCOUNT_DISABLED);
-        }
-        
+
         $session = new Session($this->db, $this->logger);
         if( ! $session->getByUserId($user->id)){
             $session->userId = $user->id;
