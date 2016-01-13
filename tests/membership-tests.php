@@ -18,14 +18,14 @@ class MembershipTest extends PHPUnit_Framework_TestCase
     public static function setUpBeforeClass()
     {
         // Create a local database as follows:
-        // CREATE USER 'membership'@'localhost' IDENTIFIED BY 'membership';
-        // GRANT USAGE ON *.* TO 'membership'@'localhost' IDENTIFIED BY 'membership' WITH MAX_QUERIES_PER_HOUR 0 MAX_CONNECTIONS_PER_HOUR 0 MAX_UPDATES_PER_HOUR 0 MAX_USER_CONNECTIONS 0;
+        // CREATE USER 'travis'@'localhost';
+        // GRANT USAGE ON *.* TO 'travis'@'localhost';
         // CREATE DATABASE IF NOT EXISTS `membership`;
-        // GRANT ALL PRIVILEGES ON `membership`.* TO 'membership'@'localhost';
+        // GRANT ALL PRIVILEGES ON `membership`.* TO 'travis'@'localhost';
         self::$db = new \PDO(
             'mysql:host=localhost;dbname=membership;charset=utf8',
-            'membership',
-            'membership',
+            'travis',
+            null,
             array(
                 \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
                 \PDO::ATTR_PERSISTENT => false
@@ -53,6 +53,7 @@ class MembershipTest extends PHPUnit_Framework_TestCase
      * Run a SELECT stmt
      * @param $sql
      * @param $params
+     * @return bool
      */
     private function executeQuery($sql, $params){
 		try 
