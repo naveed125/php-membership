@@ -1,7 +1,7 @@
 language: php
 
 php:
-- 5.5
+- 5.4
 
 sudo: required
 
@@ -15,6 +15,7 @@ test:
     encoding: utf8
 
 install:
+  - composer self-update
   - composer install
 
 before_script:
