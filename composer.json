@@ -9,7 +9,7 @@
         "psr-4": {"Membership\\": "src/Membership/"}
     },
     "require": {
-        "php": ">=5.4.0",
+        "php": ">=5.5.0",
         "phpmailer/phpmailer": "^5.2",
         "monolog/monolog": "^1.15",
         "facebook/php-sdk-v4": "^5.0"
