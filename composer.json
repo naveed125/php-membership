@@ -1,6 +1,6 @@
 {
     "name": "naveed125/php-membership",
-    "description": "A simple user management library that supports things like signin, sign-out, sign-up, forgot-password and email-verification.",
+    "description": "A simple secure user management library that supports things like signin, sign-out, sign-up, forgot-password and email-verification.",
     "keywords": ["php", "membership", "psr-4"],
     "homepage": "http://github.com/naveed125/php-membership",
     "type": "library",

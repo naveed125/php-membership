@@ -504,7 +504,7 @@ class Membership {
             return array(false, self::ERROR_INTERNAL_ERROR);
         }
         
-        $this->sendVerificationEmail($user->id, $email, $vcode->code, $name);
+        $this->sendVerificationEmail($user->id, $email, $vcode->code, $email);
         return array(true, $vcode->code);                
     }
     
@@ -540,6 +540,7 @@ class Membership {
      * @param string $email
      * @param string $code
      * @param string $name
+     * @param bool $new
      * @return bool
      */
     private function sendVerificationEmail($userId, $email, $code, $name, $new = true){

@@ -10,7 +10,7 @@ class Session extends BaseModel {
     public $userId = 0;
     public $token = null;
     public $createdAt = 0;
-    public $expiresAt = null;
+    public $expires = null;
 
     /**
      * constructor
@@ -78,6 +78,7 @@ EOF;
     /**
      * get a session by user id
      * @param int $userId
+     * @param bool $valid
      * @return bool
      */
     public function getByUserId($userId, $valid = false){
