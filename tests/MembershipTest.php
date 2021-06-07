@@ -13,9 +13,10 @@ class MembershipTest extends TestCase
     private static $testUserEmail = null;
     private static $testUserPswd = null;
     private static $sessionToken = null;
-    
+
     /**
      * Setup required stuff for the test
+     * @throws Exception
      */
     public static function setUpBeforeClass() :void
     {
@@ -34,7 +35,7 @@ class MembershipTest extends TestCase
             )
         );
         
-        self::$membership = new \Membership\Membership(array(
+        self::$membership = new Membership(array(
                'db' => self::$db,
                'mailer' => null,
                'salt' => '!O5HA1069mf',
