@@ -6,7 +6,7 @@ require_once __DIR__ . "/../src/Membership/Membership.php";
 use Membership\Membership;
 use PHPUnit\Framework\TestCase;
 
-class MembershipTest extends TestCase
+class MembershipTests extends TestCase
 {
     private static $db = null;
     private static $membership = null;

@@ -22,4 +22,4 @@ before_script:
   - mysql -e 'create database membership;'
   - mysql -utravis membership < src/Membership/schema/membership.sql
 
-script: phpunit tests/membership-tests.php
+script: phpunit tests/MembershipTests.php
