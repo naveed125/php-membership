@@ -1,10 +1,12 @@
 <?php
 
+require_once __DIR__ . "/../vendor/autoload.php";
 require_once __DIR__ . "/../src/Membership/Membership.php";
-        
-use Membership\Membership;
 
-class MembershipTest extends PHPUnit_Framework_TestCase
+use Membership\Membership;
+use PHPUnit\Framework\TestCase;
+
+class MembershipTest extends TestCase
 {
     private static $db = null;
     private static $membership = null;
@@ -15,7 +17,7 @@ class MembershipTest extends PHPUnit_Framework_TestCase
     /**
      * Setup required stuff for the test
      */
-    public static function setUpBeforeClass()
+    public static function setUpBeforeClass() :void
     {
         // Create a local database as follows:
         // CREATE USER 'travis'@'localhost';
@@ -53,7 +55,7 @@ class MembershipTest extends PHPUnit_Framework_TestCase
      * Run a SELECT stmt
      * @param $sql
      * @param $params
-     * @return bool
+     * @return mixed
      */
     private function executeQuery($sql, $params){
 		try 
@@ -69,7 +71,7 @@ class MembershipTest extends PHPUnit_Framework_TestCase
 				return false;
 			}
 		}
-		catch(\PDOException $pdoe){
+		catch(PDOException $pdoe){
 			echo(__METHOD__ . "(): ERROR DURING PDO OPERATION" . json_encode(array('msg' => $pdoe->getMessage())));
 			return false;
 		}
